@@ -1,0 +1,3 @@
+[submodule "lib/gogoOAuth"]
+	path = lib/gogoOAuth
+	url = http://github.com/sleemanj/gogoOAuth.git
