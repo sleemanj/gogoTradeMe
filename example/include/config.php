@@ -2,8 +2,8 @@
   
   // Take care that you put your key in consumer_key and secret in consumer_secret, it is 
   // easy to accidentally switch them, and then nothing will work!
-  $consumer_key    = '';
-  $consumer_secret = '';
+  $consumer_key    = NULL;
+  $consumer_secret = NULL;
   
   // 'sandbox' or 'live', note that your secret and key are specific to either sandbox or live
   // if you create your secret/key in live, they only work in live, and if you create in sandbox
