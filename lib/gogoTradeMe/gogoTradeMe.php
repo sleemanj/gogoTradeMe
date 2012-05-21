@@ -34,22 +34,65 @@
   {
      protected $APIBaseURL            = 'https://api.trademe.co.nz/v1/';    
      protected $OAuthBaseURL          = 'https://secure.trademe.co.nz/Oauth/';
+     protected $PhotosURLPrefix       = 'http://images.trademe.co.nz/photoserver/';
+     protected $MainWebsiteURL        = 'http://www.trademe.co.nz/';
+     
      protected $ResponseClass         = 'gogoTradeMeResponse';  
      protected $DefaultAPIEndpintExtention   = 'xml';        
      protected $DefaultNamespaceForXMLPost   = 'http://api.trademe.co.nz/v1';
-
-   
+    
     /**
      * Get the URL of the authorization page.
      *     
      * @return string The Authorization URL.
      */
      
-    public function get_authorize_url()
+    public function get_authorize_url($Scope='MyTradeMeRead,MyTradeMeWrite,BiddingAndBuying')
     {           
-      return parent::get_authorize_url() . '&scope=MyTradeMeRead,MyTradeMeWrite,BiddingAndBuying';
+      return parent::get_authorize_url() . '&scope='.$Scope;
     }
     
+    /** 
+     * Get the URL to a stored photo.
+     *
+     * @param int|object Either the Id of the photo, or a response containing 'Id' element
+     * @return string URL
+     */
+     
+    public function get_photo_url($PhotoId)
+    {
+      if(is_object($PhotoId) && isset($PhotoId->Id)) $PhotoId = (string) $PhotoId->Id;
+      preg_match('/([1-9]?[0-9])$/', (string) $PhotoId, $M);
+      return $this->PhotosURLPrefix . $M[1] . '/'.$PhotoId . '_full.jpg';
+    }
+    
+    /** 
+     * Get the URL to a stored photo's thumbnail.
+     *
+     * @param int|object Either the Id of the photo, or a response containing 'Id' element
+     * @return string URL
+     */
+     
+    public function get_thumbnail_url($PhotoId)
+    {
+      if(is_object($PhotoId) && isset($PhotoId->Id)) $PhotoId = (string) $PhotoId->Id;
+      preg_match('/([1-9]?[0-9])$/', (string) $PhotoId, $M);
+      return $this->PhotosURLPrefix . 'thumb/'. $M[1] . '/'.$PhotoId . '.jpg';
+    }
+    
+    
+    /** 
+     * Get the URL to a listing.
+     *
+     * @param int|object Either the ListingId of the listing, or a response containing 'ListingId' element
+     * @return string URL
+     */
+     
+    public function get_listing_url($ListingId)
+    {
+      if(is_object($ListingId) && isset($ListingId->ListingId)) $ListingId = (string) $ListingId->ListingId;      
+      return $this->MainWebsiteURL . 'Browse/Listing.aspx?id='.$ListingId;
+    }
           
     /** Validate and potentially modify the provided XML which is going to be posted.
      *
