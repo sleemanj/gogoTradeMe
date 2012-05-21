@@ -76,6 +76,9 @@
         case 'Categories'   :  return $this->validate_post_xml_catalogue($method, $xml);
         
         case 'Favourites'   :  return $this->validate_post_xml_favourites($method, $xml);
+        
+        case 'FixedPriceOffers'   :  return $this->validate_post_xml_fixedpriceoffers($method, $xml);
+        case 'Selling':        return $this->validate_post_xml_selling($method, $xml);        
       }      
       
       parent::validate_post_xml($method, $xml);
@@ -163,7 +166,7 @@
         {
           // Element Order
           $Defaults           = array('Country' => 'New Zealand');          
-          $ElementOrder       = array('Name', 'Address1', 'Address2','Suburb', 'City', 'PostCode', 'Country', 'Id');
+          $ElementOrder       = array('Name', 'Address1', 'Address2','Suburb', 'City', 'PostCode', 'Country', 'IsMembershipAddress', 'Id');
           
           $this->set_xml_defaults($xml, $Defaults); 
           $this->reorder_xml_elements($xml, $ElementOrder);       
@@ -176,6 +179,61 @@
           // Element Order
           $Defaults           = array('ListingId' => NULL, 'EmailOption' => 'UseDefault', 'SaveEmailOption' => 'false');          
           $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);     
+        }
+        break;
+        
+        case 'FeedbackRequest':
+        {
+          // Element Order
+          $Defaults           = array('FeedbackType' => NULL, 'Text' => NULL, 'ListingId' => NULL);          
+          $ElementOrder       = array('FeebackType', 'Text', 'ListingId', 'IsForFpo' );
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);     
+        }
+        break;
+        
+        case 'FeedbackUpdateRequest':
+        {
+          // Element Order
+          $Defaults           = array('FeedbackType' => NULL, 'Text' => NULL, 'FeedbackId' => NULL);          
+          $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);     
+        }
+        break;
+        
+        case 'BlacklistRequest':
+        {
+          // Element Order
+          $Defaults           = array('MemberId' => NULL);          
+          $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);     
+        }
+        break;
+        
+        case 'EmailOptions':
+        {
+          // Element Order
+          $Defaults           = array();          
+          $ElementOrder       = array('IsAppliedToExisting', 'WatchlistReminder', 'Newsletter', 'EmailFormat', 'EmailMemberWhen', 'FixedPriceOffer', 'Relist', 'Agent', 'AgentReportFormat' );
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);     
+        }
+        break;
+        
+        case 'PayNowRefundRequest':
+        {
+          // Element Order
+          $Defaults           = array('ListingId' => NULL);          
+          $ElementOrder       = array('ListingId', 'OfferId', 'Amount');
           
           $this->set_xml_defaults($xml, $Defaults); 
           $this->reorder_xml_elements($xml, $ElementOrder);     
@@ -203,7 +261,7 @@
         case 'BidRequest':
         {
           // Element Order
-          $Defaults           = array('ListingId' => NULL, 'Amount'=> NULL, 'AutoBid' => 'false', 'ShippingOption' => NULL);          
+          $Defaults           = array('ListingId' => NULL, 'Amount'=> NULL, 'AutoBid' => 'false', 'ShippingOption' => NULL, 'EmailOutBid' => 'false');          
           $ElementOrder       = array_keys($Defaults);
           
           $this->set_xml_defaults($xml, $Defaults); 
@@ -214,7 +272,7 @@
         case 'BuyNowRequest':
         {
           // Element Order
-          $Defaults           = array('ListingId' => NULL, 'ShippingOption' => NULL);              
+          $Defaults           = array('ListingId' => NULL, 'ShippingOption' => NULL, 'Quantity' => 1);              
           $ElementOrder       = array_keys($Defaults);
           
           $this->set_xml_defaults($xml, $Defaults); 
@@ -385,6 +443,227 @@
         {
           // Element Order
           $Defaults           = array('Email' => 'Daily', 'SellerId' => NULL);          
+          $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        default: 
+          throw new DomainException('Unknown XML Post: '.$method.'::'.$xml->getName());
+          return;
+      }
+    }
+    
+    /** Validate XML used in posting to the FixedPriceOffers methods
+     *
+     *  @param string
+     *  @param SimpleXMLElement
+     *  @throws UnexpectedValueException
+     *  @throws DomainException If the XML root element/method is unrecognised.
+     */
+     
+    protected function validate_post_xml_fixedpriceoffers($method, &$xml)
+    {
+      switch($xml->getName())
+      {
+        case 'FixedPriceOfferRequest':
+        {
+          // Element Order
+          $Defaults           = array('ListingId' => NULL, 'Accept' => NULL, 'ShippingOption' => NULL, 'Quantity' => 1);          
+          $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        case 'FixedPriceOfferToMembersRequest':
+        {
+          // Element Order
+          $Defaults           = array('ListingId' => NULL, 'Price' => NULL, 'Duration' => 'One', 'Quantity' => 1, 'MemberIds' => NULL);          
+          $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        case 'FixedPriceOfferWithdrawalRequest':
+        {
+          // Element Order
+          $Defaults           = array('ListingId' => NULL);          
+          $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        default: 
+          throw new DomainException('Unknown XML Post: '.$method.'::'.$xml->getName());
+          return;
+      }
+    }
+   
+    /** Validate XML used in posting to the Selling methods
+     *
+     *  @param string
+     *  @param SimpleXMLElement
+     *  @throws UnexpectedValueException
+     *  @throws DomainException If the XML root element/method is unrecognised.
+     */
+     
+    protected function validate_post_xml_selling($method, &$xml)
+    {
+      switch($xml->getName())
+      {
+        case 'ListingRequest':
+        {
+          // Element Order
+          $Defaults           = array(
+            'Category' => NULL,
+            'Title' => NULL,
+            'Subtitle' => NULL,
+            'Description' => NULL,
+            'StartPrice' => NULL,
+            'ReservePrice' => NULL,
+                        
+            'Duration' => NULL,
+            
+            'ShippingOptions' => NULL,
+            'PaymentMethods' => NULL,
+          );     
+          
+          $ElementOrder       = array_keys(
+            'Category',
+            'Title',
+            'Subtitle',
+            'Description',
+            'StartPrice',
+            'ReservePrice',
+            'BuyNowPrice',
+            'Duration',
+            'EndDateTime',
+            'Pickup',
+            'IsBrandNew',
+            'AuthenticatedMembersOnly',
+            'IsClassified',
+            'SendPaymentInstructions',
+            'OtherPaymentMethod',
+            'IsOrNearOffer',
+            'IsPriceOnApplication',
+            'IsBold',
+            'IsFeatured',
+            'IsHomepageFeatured',
+            'HasGallery',
+            'Quantity',
+            'IsFlatShippingCharge',
+            'HasAgreedWithLegalNotice',
+            'AutoRelistLimit',
+            'HomePhoneNumber',
+            'MobilePhoneNumber',
+            'IsHighlighted',
+            'HasSuperFeature',
+            'PhotoIds',
+            'ShippingOptions',
+            'PaymentMethods',
+            'Attributes'
+          );
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        case 'EditListingRequest':
+        {
+          // Element Order
+          $Defaults           = array(
+            'Category' => NULL,
+            'Title' => NULL,
+            'Subtitle' => NULL,
+            'Description' => NULL,
+            'StartPrice' => NULL,
+            'ReservePrice' => NULL,
+                        
+            'Duration' => NULL,
+            
+            'ShippingOptions' => NULL,
+            'PaymentMethods' => NULL,
+            
+            'ListingId'      => NULL
+          );     
+          
+          $ElementOrder       = array_keys(
+            'Category',
+            'Title',
+            'Subtitle',
+            'Description',
+            'StartPrice',
+            'ReservePrice',
+            'BuyNowPrice',
+            'Duration',
+            'EndDateTime',
+            'Pickup',
+            'IsBrandNew',
+            'AuthenticatedMembersOnly',
+            'IsClassified',
+            'SendPaymentInstructions',
+            'OtherPaymentMethod',
+            'IsOrNearOffer',
+            'IsPriceOnApplication',
+            'IsBold',
+            'IsFeatured',
+            'IsHomepageFeatured',
+            'HasGallery',
+            'Quantity',
+            'IsFlatShippingCharge',
+            'HasAgreedWithLegalNotice',
+            'AutoRelistLimit',
+            'HomePhoneNumber',
+            'MobilePhoneNumber',
+            'IsHighlighted',
+            'HasSuperFeature',
+            'PhotoIds',
+            'ShippingOptions',
+            'PaymentMethods',
+            'Attributes',
+            'ListingId'
+          );
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        case 'WithdrawRequest':
+        {
+          // Element Order
+          $Defaults           = array('ListingId' => NULL, 'Type' => NULL);          
+          $ElementOrder       = array('ListingId', 'Type', 'Reason', 'SalePrice');
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        case 'RelistListingRequest':
+        {
+          // Element Order
+          $Defaults           = array('ListingId' => NULL);          
+          $ElementOrder       = array_keys($Defaults);
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);       
+        }
+        break;
+        
+        case 'SellSimilarListingRequest':
+        {
+          // Element Order
+          $Defaults           = array('ListingId' => NULL);          
           $ElementOrder       = array_keys($Defaults);
           
           $this->set_xml_defaults($xml, $Defaults); 
