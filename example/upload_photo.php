@@ -60,11 +60,12 @@
   <ul>
   <?php
     $Photos = trademe()->get('Photos');
+    
     foreach($Photos->List->MemberPhoto as $Photo)
     {
-      preg_match('/([1-9]?[0-9])$/', (string) $Photo->Id, $M);
-      $Thumb = "http://images.trademe.co.nz/photoserver/thumb/{$M[1]}/{$Photo->Id}.jpg";
-      $Full  = "http://images.trademe.co.nz/photoserver/{$M[1]}/{$Photo->Id}_full.jpg";
+      preg_match('/([1-9]?[0-9])$/', (string) $Photo, $M);
+      $Thumb = trademe()->get_thumbnail_url($Photo);
+      $Full  = trademe()->get_photo_url($Photo);
       ?>
       <li>
         <img src="<?php echo htmlspecialchars($Thumb); ?>" />

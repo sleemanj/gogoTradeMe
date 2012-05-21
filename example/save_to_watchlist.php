@@ -68,9 +68,10 @@
       
       foreach($Watchlist->List->WatchlistItem as $Item)
       { 
+        $ListingURL = trademe()->get_listing_url($Item);
         ?>
         <li>
-          <a href="http://www.trademe.co.nz/Browse/Listing.aspx?id=<?php echo $Item->ListingId ?>"><?php echo $Item->Title; ?></a> 
+          <a href="<?php echo $ListingURL ?>"><?php echo $Item->Title; ?></a> 
             [<a href="save_to_watchlist.php?Delete=<?php echo $Item->ListingId ?>">Delete</a>]
         </li>
         <?php

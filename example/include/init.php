@@ -16,13 +16,27 @@
       throw new Exception("You must edit config.php to enter your consumer secret and key, which you obtain from Trade Me");
     }
     
-    require_once('../lib/gogoTradeMe/gogoTradeMe.php');
-    $trademe = new gogoTradeMe
-        ( 
-          $consumer_key,                          // Obtain from "My TradeMe"
-          $consumer_secret,                       // Obtain from "My TradeMe"
-          $callback_url                           // Handles the return from TradeMe
-        );
+    
+    if($environment == 'sandbox')
+    {
+      require_once('../lib/gogoTradeMe/gogoTradeMeSandbox.php');
+      $trademe = new gogoTradeMeSandbox
+          ( 
+            $consumer_key,                          // Obtain from "My TradeMe"
+            $consumer_secret,                       // Obtain from "My TradeMe"
+            $callback_url                           // Handles the return from TradeMe
+          );
+    }
+    else
+    {
+      require_once('../lib/gogoTradeMe/gogoTradeMe.php');
+      $trademe = new gogoTradeMe
+          ( 
+            $consumer_key,                          // Obtain from "My TradeMe"
+            $consumer_secret,                       // Obtain from "My TradeMe"
+            $callback_url                           // Handles the return from TradeMe
+          );      
+    }
     
     return $trademe;
   }
