@@ -36,6 +36,7 @@
           <a href="save_note.php" title="Add a Note">Notes Demo</a>
           <a href="add_delivery_address.php" title="Add a Note">Addresses Demo</a>
           <a href="upload_photo.php" title="Upload Photo">Photo Demo</a>  
+          <a href="list_item.php" title="List Item">Selling Demo</a>  
           <a />
           <a href="watchlist.php" title="Watchlist">Dump Watchlist XML</a>  
           <a href="any_get.php" title="Watchlist">Dump Any GET</a>  

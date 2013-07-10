@@ -37,6 +37,7 @@
     {    
       if(!parent::is_ok()) return FALSE;
       if(isset($this->Data()->ErrorDescription) || isset($this->data()->Error)) return FALSE;
+      if(isset($this->Data()->Success) && (string) $this->Data()->Success == 'false') return FALSE;
       return TRUE;
     }
     
@@ -57,6 +58,7 @@
         
       if(isset($data->Error))            return $data->Error;        
       if(isset($data->ErrorDescription)) return $data->ErrorDescription; // Consistency anybody? :-(
+      if(isset($data->Description))      return $data->Description;      // Really now guys, this is stupid! :-(
       
       return 'Unknown Error';
     }

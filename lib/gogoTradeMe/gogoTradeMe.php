@@ -108,20 +108,22 @@
       switch(ucfirst(strtolower(preg_replace('/[.\/].*$/', '', $method))))
       {
         case 'Photos'       :  return $this->validate_post_xml_photos($method, $xml);
-        case 'MyTradeMe'    :  return $this->validate_post_xml_mytrademe($method, $xml);
+        case 'Mytrademe'    :  return $this->validate_post_xml_mytrademe($method, $xml);
         case 'Bidding'      :  return $this->validate_post_xml_bidding($method, $xml);
         case 'Listings'     :  return $this->validate_post_xml_listings($method, $xml);
         case 'Member'       :  return $this->validate_post_xml_member($method, $xml);
         case 'Search'       :  return $this->validate_post_xml_search($method, $xml);
         
         case 'Localities'   :
-        case 'TmAreas'      :
+        case 'Tmareas'      :
         case 'Categories'   :  return $this->validate_post_xml_catalogue($method, $xml);
         
         case 'Favourites'   :  return $this->validate_post_xml_favourites($method, $xml);
         
-        case 'FixedPriceOffers'   :  return $this->validate_post_xml_fixedpriceoffers($method, $xml);
+        case 'Fixedpriceoffers'   :  return $this->validate_post_xml_fixedpriceoffers($method, $xml);
         case 'Selling':        return $this->validate_post_xml_selling($method, $xml);        
+        default: 
+         throw new Exception("Unknown Post Type " . ucfirst(strtolower(preg_replace('/[.\/].*$/', '', $method))) . ".  Maybe the API has added a new thing we don't understand yet.");
       }      
       
       parent::validate_post_xml($method, $xml);
@@ -231,8 +233,8 @@
         case 'FeedbackRequest':
         {
           // Element Order
-          $Defaults           = array('FeedbackType' => NULL, 'Text' => NULL, 'ListingId' => NULL);          
-          $ElementOrder       = array('FeebackType', 'Text', 'ListingId', 'IsForFpo' );
+          $Defaults           = array('FeedbackType' => NULL, 'Text' => NULL,  'PurchaseId' => NULL);          // 'ListingId' => NULL, 'IsForFpo' => NULL,
+          $ElementOrder       = array('FeedbackType', 'Text', 'ListingId', 'IsForFpo', 'PurchaseId' );
           
           $this->set_xml_defaults($xml, $Defaults); 
           $this->reorder_xml_elements($xml, $ElementOrder);     
@@ -560,6 +562,7 @@
      
     protected function validate_post_xml_selling($method, &$xml)
     {
+   
       switch($xml->getName())
       {
         case 'ListingRequest':
@@ -579,7 +582,7 @@
             'PaymentMethods' => NULL,
           );     
           
-          $ElementOrder       = array_keys(
+          $ElementOrder       = array(
             'Category',
             'Title',
             'Subtitle',
@@ -593,6 +596,7 @@
             'IsBrandNew',
             'AuthenticatedMembersOnly',
             'IsClassified',
+            'OpenHomes',
             'SendPaymentInstructions',
             'OtherPaymentMethod',
             'IsOrNearOffer',
@@ -601,6 +605,7 @@
             'IsFeatured',
             'IsHomepageFeatured',
             'HasGallery',
+            'HasGalleryPlus',
             'Quantity',
             'IsFlatShippingCharge',
             'HasAgreedWithLegalNotice',
@@ -612,11 +617,27 @@
             'PhotoIds',
             'ShippingOptions',
             'PaymentMethods',
-            'Attributes'
+            'Attributes',
+            'IsClearance',
+            'Contacts'
           );
           
-          $this->set_xml_defaults($xml, $Defaults); 
-          $this->reorder_xml_elements($xml, $ElementOrder);       
+          
+          $this->set_xml_defaults($xml, $Defaults);        
+
+          if(!isset($xml->Description->Paragraph))
+          {
+            $Description = (string)$xml->Description;
+            $xml->Description = '';
+            
+            $Description = preg_split('/\r?\n/', $Description);                     
+            foreach($Description as $Para)            
+            {
+              $xml->Description->addChild('Paragraph', $Para);              
+            }            
+          }
+                   
+          $this->reorder_xml_elements($xml, $ElementOrder, $ElementOrder);           
         }
         break;
         
@@ -653,6 +674,7 @@
             'IsBrandNew',
             'AuthenticatedMembersOnly',
             'IsClassified',
+            'OpenHomes',
             'SendPaymentInstructions',
             'OtherPaymentMethod',
             'IsOrNearOffer',
@@ -661,6 +683,7 @@
             'IsFeatured',
             'IsHomepageFeatured',
             'HasGallery',
+            'HasGalleryPlus',
             'Quantity',
             'IsFlatShippingCharge',
             'HasAgreedWithLegalNotice',
@@ -673,11 +696,25 @@
             'ShippingOptions',
             'PaymentMethods',
             'Attributes',
+            'IsClearance',
             'ListingId'
           );
           
-          $this->set_xml_defaults($xml, $Defaults); 
-          $this->reorder_xml_elements($xml, $ElementOrder);       
+          $this->set_xml_defaults($xml, $Defaults);           
+          
+          if(!isset($xml->Description->Paragraph))
+          {
+            $Description = (string)$xml->Description;
+            $xml->Description = '';
+            
+            $Description = preg_split('/\r?\n/', $Description);                     
+            foreach($Description as $Para)            
+            {
+              $xml->Description->addChild('Paragraph', $Para);              
+            }            
+          }
+          
+          $this->reorder_xml_elements($xml, $ElementOrder, $ElementOrder);       
         }
         break;
         
@@ -735,7 +772,7 @@
         {        
           if(!isset($v) && !isset($xml->{$k}))
           {
-            throw new UnexpectedValueException(sprintf($ExceptionMessage, $v));
+            throw new UnexpectedValueException(sprintf($ExceptionMessage, $k));
           }
           
           if(is_scalar($v))
@@ -760,16 +797,26 @@
      * @param array Element names in the order required.
      */
      
-    protected function reorder_xml_elements(&$xml, $order)
+    protected function reorder_xml_elements(&$xml, $order, $skip_if_blank = array())
     {    
       $out = "<".$xml->getName();
       foreach($xml->attributes() as $a => $v) $out .= " {$a}=\"".htmlspecialchars($v)."\"";
       $out .= ">";
       
       foreach($order as $element)
-      {
+      {      
         if(isset($xml->{$element}))
-        $out.= $xml->{$element}->asXML();
+        {
+          if(in_array($element, $skip_if_blank))
+          {
+            if(!count($xml->{$element}->children()) && !strlen((string) $xml->{$element}))
+            {             
+              continue;
+            }            
+          }
+          
+          $out.= $xml->{$element}->asXML();
+        }
       }
       
       $out .= "</".$xml->getName().">";

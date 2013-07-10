@@ -28,7 +28,7 @@
         <li><a href="save_note.php">Add a note to a listing</a> - a simple "XML POST".</li>
         <li><a href="add_delivery_address.php">Add a delivery address</a> - a simple "XML POST".</li>
         <li><a href="upload_photo.php">Upload a photo to your My TradeMe</a> - a complicated "XML POST" which has been made very simple by gogoTradeMe.</li>
-        
+        <li><a href="list_item.php">List an item</a> - specifically in the Computers/Monitors/LCD Category, demonstrates listing a general item with attributes (monitor size).</li>        
       </ul>
       <?php
     }
