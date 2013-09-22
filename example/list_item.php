@@ -25,6 +25,15 @@
       echo "<pre> trademe()->post('Selling::ListingRequest', " . htmlspecialchars(var_export($_REQUEST['Listing'], true)) . "); </pre>";
       echo "<p><strong>TradeMe returned the following XML.</strong></p>";
       echo "<pre>".htmlspecialchars($Response->asIndentedXML())."</pre>";            
+      ?>
+      <h2>Editing Note</h2>
+      <p>There is no example for editing, however this code will point you in the right direction...</p>
+      <pre>$EditingData = trademe()->get_listing_for_edit(<?php echo (string) $Response->ListingId ?>);
+$EditingData['Duration'] = 'EndDate';
+$EditingData['EndDateTime'] = date('c', time()+(60*60*8));
+trademe()->post('Selling/Edit::EditListingRequest', $EditingData);</pre>
+      <p>But you <strong>must</strong> read the comments in gogoTradeMe.php about the get_listing_for_edit() method, there are a lot of cautions and potential problems!</p>
+      <?php
     }
     else
     {

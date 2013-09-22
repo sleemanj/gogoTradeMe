@@ -94,6 +94,150 @@
       return $this->MainWebsiteURL . 'Browse/Listing.aspx?id='.$ListingId;
     }
           
+    /**
+     * Get an array of data which can be submitted as ->post('Selling/Edit::EditListingRequest', $Data)
+     *
+     * Example, setting expiry date 8 hours in future:
+     *
+     *   $EditingData = trademe()->get_listing_for_edit(123456789);
+     *   $EditingData['Duration']    = 'EndDate';
+     *   $EditingData['EndDateTime'] = date('c', time() + 60*60*8);
+     *   trademe()->post('Selling/Edit::EditListingRequest', $EditingData);
+     *
+     * A whole load of cautions!!
+     *  Due to inconsistency in the Trade Me API, we can not guarantee that the data you get,
+     *  if submitted as an edit will not have unintended consequences.  Especially for "special"
+     *  listing types like Vehicles.  Ensure that if your use this function, you take
+     *  special care in your testing that it works as you desire it to.
+     *
+     *  Due to TradeMe API limits currently; 
+     *    Duration                 is undefined (probably empty) - you likely WILL need to set this even if not changing!
+     *    SendPaymentInstructions  is always set true     
+     *    IsPriceOnApplication     is undefined (false)
+     *    HasGalleryPlus           is probably correct, but not certain
+     *    HasAgreedWithLegalNotice is always true
+     *    HomePhoneNumber          may be correct, uncertain
+     *    MobilePhoneNumber        may be correct, uncertain
+     *    HasSuperFeature          is undefined (false)
+     *    PaymentMethods           is best guess 
+     *    OtherPaymentMethod       is best guess if any
+     *    IsClearance              is undefined (false)
+     *    Contacts                 is best guess (probably only applies to Classifieds, may not be equivalent to current listing)
+     *    
+     *  The Selling/Edit API does not support these things at all, which may be applicable only to special types of listings...
+     *    RegionId , Region, Suburb, GeographicLocation
+     *    Dealership
+     *    Agency
+     *    ContactDetails            - this is used as "Contacts" (above), using the member's email address as well
+     *
+     *  Additional notes about Selling/Edit...
+     *    HasBuyNow                 - This is determined by BuyNowPrice
+     *    IsBuyNowOnly, HasMultiple - This is determined by there being a Quantity and a BuyNowPrice
+     *    Description               - You can set $Data['Description'] to a string and it will be converted appropriatly
+     *    
+     */
+     
+    public function get_listing_for_edit($ListingId)
+    {
+      $FullListing = $this->get('Listings/'.(int)$ListingId);
+      if(!$FullListing->is_ok())            return NULL;
+      
+      $Edit = array_pop($this->codec()->xml_to_array($FullListing));
+            
+      $Edit['Description']         = $Edit['Body']; // Note that Body is a plain string
+                                                    // Description needs <paragraph> child elements, we will do that 
+                                                    // in validate_post_xml_selling 
+                                                    
+      $Edit['EndDateTime']        = $Edit['EndDate'];
+      $Edit['Pickup']             = $Edit['AllowsPickups'];
+      $Edit['IsBrandNew']         = $Edit['IsNew'];
+      $Edit['IsHomepageFeatured'] = $Edit['HasHomePageFeature'];
+      
+      if(!@$Edit['StartPrice'])     $Edit['StartPrice'] = $Edit['BuyNowPrice'];
+      
+      $Edit['PhotoIds'] = array();
+      foreach($FullListing->Photos->Photo as $P)
+      {
+        $Edit['PhotoIds']['PhotoId'][] = (int) $P->PhotoId;
+      }
+              
+      // FIXME - not available in any API :(
+      {
+        if(!isset($Edit['Duration']))                 $Edit['Duration']                 = @$Edit['ListingLength'];
+        if(!isset($Edit['SendPaymentInstructions']))  $Edit['SendPaymentInstructions']  = 1;               
+        if(!isset($Edit['IsPriceOnApplication']))     $Edit['IsPriceOnApplication']     = NULL;
+        if(!isset($Edit['HasGalleryPlus']))           $Edit['HasGalleryPlus']           = isset($Edit['RemainingGalleryPlusRelists']);
+        if(!isset($Edit['HasAgreedWithLegalNotice'])) $Edit['HasAgreedWithLegalNotice'] = 1;
+        
+        if(!isset($Edit['HomePhoneNumber']))          $Edit['HomePhoneNumber']   = @$Edit['ContactDetails']['PhoneNumber'];
+        if(!isset($Edit['MobilePhoneNumber']))        $Edit['MobilePhoneNumber'] = @$Edit['ContactDetails']['MobilePhoneNumber'];
+        if(!isset($Edit['HasSuperFeature']))          $Edit['HasSuperFeature']   = NULL;
+        
+        // Best guess at the payment methods offered..
+        if(!isset($Edit['PaymentMethods']))
+        {
+          $Edit['PaymentMethods']['PaymentMethod'] = array();
+          foreach(explode(',', (string) $FullListing->PaymentOptions) as $Pmt)
+          {
+            if(!trim($Pmt)) continue;
+            switch(strtolower(preg_replace('/\s+/', '', $Pmt)))
+            {
+              case 'nzbankdeposit': // LOWER CASE NO SPACE
+                $Edit['PaymentMethods']['PaymentMethod'][] = 'BankDeposit';
+                break;
+              
+              case 'cash': // LOWER CASE
+                $Edit['PaymentMethods']['PaymentMethod'][] = 'Cash';
+                break;
+              
+              case 'paynow':  
+              case 'creditcard':
+                $Edit['PaymentMethods']['PaymentMethod'][] = 'CreditCard';
+                break;
+              
+              case 'safetrader':
+                $Edit['PaymentMethods']['PaymentMethod'][] = 'SafeTrader';
+              
+              default:
+                $Edit['PaymentMethods']['PaymentMethod'][] = 'Other';
+                $Edit['OtherPaymentMethod'] = $Pmt;
+            }
+          }
+        
+        
+          if(!count($Edit['PaymentMethods']['PaymentMethod'])) 
+          {
+            $Edit['PaymentMethods']['PaymentMethod'] = 'None';
+          }
+        }
+        
+        if(!isset($Edit['IsClearance']))              $Edit['IsClearance']       = NULL;
+        
+        if(!isset($Edit['Contacts']['Contact']))
+        {
+          if(isset($Edit['ContactDetails']['ContactName']))
+          {
+            $Edit['Contacts']['Contact'] = array('FullName' => $Edit['ContactDetails']['ContactName'],
+                                                  'PhoneNumber' => $Edit['ContactDetails']['PhoneNumber'],
+                                                  'AlternatePhoneNumber' => $Edit['ContactDetails']['MobilePhoneNumber'],
+                                                  'Email'    => $Edit['Member']['Email']);
+          }
+        }
+      }
+      
+      // Run through the validator to make it easier for the developer using this
+      // function to see what's available.      
+      $Xml = new SimpleXMLElement($this->codec()->array_to_xml(array('EditListingRequest' => $Edit)));
+      $this->validate_post_xml_selling('Selling/Edit', $Xml);
+      
+      // Return as an array to make it easy.
+      $Edit = $this->codec()->xml_to_array($Xml);
+      
+      // For simplicity for the user, reset the description to a plain string
+      // instead of an array of <Paragraph>
+      $Edit['EditListingRequest']['Description'] = (string)$FullListing->Body;
+      return $Edit['EditListingRequest'];
+    }
     /** Validate and potentially modify the provided XML which is going to be posted.
      *
      *  @param string The method being called, if post_xml() was called with a ::RootElement suffix,
@@ -571,7 +715,7 @@
           $Defaults           = array(
             'Category' => NULL,
             'Title' => NULL,
-            'Subtitle' => NULL,
+          //  'Subtitle' => NULL,
             'Description' => NULL,
             'StartPrice' => NULL,
             'ReservePrice' => NULL,
@@ -647,10 +791,10 @@
           $Defaults           = array(
             'Category' => NULL,
             'Title' => NULL,
-            'Subtitle' => NULL,
+           // 'Subtitle' => NULL,
             'Description' => NULL,
-            'StartPrice' => NULL,
-            'ReservePrice' => NULL,
+           // 'StartPrice' => NULL,
+           // 'ReservePrice' => NULL,
                         
             'Duration' => NULL,
             
@@ -660,7 +804,7 @@
             'ListingId'      => NULL
           );     
           
-          $ElementOrder       = array_keys(
+          $ElementOrder       = array(
             'Category',
             'Title',
             'Subtitle',
