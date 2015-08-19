@@ -1,6 +1,11 @@
 gogoTradeMe
 ==============================================================================
 
+NOTICE: Trademe have for some reason removed the developer forum which had much good information, in the mean time you should read the thread at the Wayback Machine
+
+https://web.archive.org/web/20150114234323/http://developer.trademe.co.nz/forum/?mingleforumaction=viewtopic&t=118.0
+
+
 gogoTradeMe provides a SIMPLE implementation of OAuth in PHP, utilising CURL, 
 and specifically intended and configured for accessing the TradeMe API.
 
