@@ -9,7 +9,7 @@
     static $trademe;
     if(isset($trademe)) return $trademe;
       
-    require_once('config.php');
+    include('config.php');
     
     if(!isset($consumer_secret) || !isset($consumer_key))
     {
@@ -69,7 +69,20 @@
     */
     
     function retrieve_token($oauth_token_type)
-    {
+    {     
+      if($oauth_token_type == 'access')
+      {      
+        include('config.php');
+        
+        if($manual_auth_access_token && $manual_auth_access_token_secret)
+        {
+          return array('oauth_token'        => $manual_auth_access_token,
+                       'oauth_token_secret' => $manual_auth_access_token_secret,
+                       'oauth_token_type'   => 'access',
+                       'oauth_token_time'   => time());
+        }
+      }
+      
       @session_start();
       if(!isset($_SESSION['TradeMe'])) $_SESSION['TradeMe'] = array();
       if(!isset($_SESSION['TradeMe'][$oauth_token_type]))

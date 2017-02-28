@@ -29,7 +29,39 @@
 ?>
 <?php include('_header.php'); ?>
       <h1 class="css-content-legend">Connect To TradeMe</h1>    
-      <p>In order to connect to your TradeMe account you must complete the authorisation process, simply click on the link below and you will be redirected to TradeMe to authorise access to your account.</p>
+      
+      <?php
+        if($_SERVER['HTTP_PORT'] != 443)
+        {
+          ?>
+          <p>To authenticate to the TradeMe API via OAuth your site (<?php $_SERVER['HTTP_HOST'] ?>) must be accessed over HTTPS, not HTTP</p>
           
-      <p><a href="connect.php?Reauthorise=1">Begin Authorisation</a></p>
+          <p>If you are going to be having "normal people" authenticate, this is not avoidable, please configure your system so you can access these files over https, and do so.</p>                    
+          <?php
+        }
+        else
+        {
+          ?>
+          <p>In order to connect to your TradeMe account you must authorise your code to talk to the TradeMe account.</p>
+           
+          <h2>OAuth Authentication</h2>
+          <p>If you are going to have "normal people" authenticate (that is, you are making some service for other people to use against their TradeMe accounts) then you would use an OAuth Authentication process.</p>
+                        
+          <p><a href="connect.php?Reauthorise=1">Begin Authorisation</a></p>
+          <?php
+        }
+      ?>
+      <h2>Manual Authentication</h2>
+      <p>If your code only needs to access your account (for example you are writing a thing to import sales from TradeMe into your systems) then you can manually authenticate following this process.</p>
+      <ol>
+        <?php include('include/config.php'); ?>
+        <li>Go to <a href="https://developer.trademe.co.nz/api-overview/authentication/">https://developer.trademe.co.nz/api-overview/authentication/</a></li>
+        <li>Environment: <?php echo $environment == 'live' ? 'Production' : 'Sandbox' ?></li>
+        <li>Consumer Key: <tt><?php echo $consumer_key; ?></tt></li>
+        <li>Consumer Secret: <tt><?php echo $consumer_secret; ?></tt></li>
+        <li>Permissions: Select All Options Applicable</li>
+        <li>Click Generate Token<li>
+        <li>Copy the Generated Token and Token Secret and enter these into the Manual Authentication section of include/config.php</li>
+      </ol>
+      <p>Note that these tokens don't typically expire, so hard coding is just fine.</p>
 <?php include('_footer.php'); ?>
