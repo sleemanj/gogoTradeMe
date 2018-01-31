@@ -309,6 +309,16 @@
             $Defaults['PhotoData'] = base64_encode(file_get_contents((string) $xml->FileName));
             
             $xml->FileName = basename((string)$xml->FileName);            
+
+            // The description is returned by the Photos method (listing photos)
+            // and is taken as the FileName provided, you may wish to use a 
+            // different description than the filename, and can do so by providing it
+            // as a parameter.
+            if(isset($xml->Description))
+            {
+              $xml->FileName = (string)$xml->Description;
+              unset($xml->Description);
+            }
           }
           
           $Defaults['FileType'] =  preg_replace('/^.*\./', '', (string)$xml->FileName);
@@ -421,8 +431,8 @@
         case 'PayNowRefundRequest':
         {
           // Element Order
-          $Defaults           = array('ListingId' => NULL);          
-          $ElementOrder       = array('ListingId', 'OfferId', 'Amount');
+          $Defaults           = array('PurchaseId' => NULL);          
+          $ElementOrder       = array('ListingId', 'OfferId', 'RefundAmount', 'PurchaseId');
           
           $this->set_xml_defaults($xml, $Defaults); 
           $this->reorder_xml_elements($xml, $ElementOrder);     
@@ -717,8 +727,8 @@
             'Title' => NULL,
           //  'Subtitle' => NULL,
             'Description' => NULL,
-            'StartPrice' => NULL,
-            'ReservePrice' => NULL,
+          //  'StartPrice' => NULL,
+          //  'ReservePrice' => NULL,
                         
             'Duration' => NULL,
             
@@ -763,7 +773,24 @@
             'PaymentMethods',
             'Attributes',
             'IsClearance',
-            'Contacts'
+            'ExternalReferenceId',
+            'Contacts', // Property Agents
+            'ReturnListingDetails',
+            'DonationRecipient',
+            'CatalogueId',            // DVD Blu-Ray
+            'PromotionId',
+            'ExcludeFromShippingPromotion',
+            'SKU',
+            'GeographicLocation',
+            'WasPrice',
+            'EmbeddedContent',
+            'IsBranded',
+            'ShortDescription',
+            'ShippingCalculatorInputs',
+            'AdditionalData',
+            'VariantDefinition',
+            'SecondCategory',            
+            'ListingId',
           );
           
           
@@ -841,7 +868,24 @@
             'PaymentMethods',
             'Attributes',
             'IsClearance',
-            'ListingId'
+            'ExternalReferenceId',
+            'Contacts', // Property Agents
+            'ReturnListingDetails',
+            'DonationRecipient',
+            'CatalogueId',            // DVD Blu-Ray
+            'PromotionId',
+            'ExcludeFromShippingPromotion',
+            'SKU',
+            'GeographicLocation',
+            'WasPrice',
+            'EmbeddedContent',
+            'IsBranded',
+            'ShortDescription',
+            'ShippingCalculatorInputs',
+            'AdditionalData',
+            'VariantDefinition',
+            'SecondCategory',            
+            'ListingId',
           );
           
           $this->set_xml_defaults($xml, $Defaults);           

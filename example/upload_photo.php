@@ -27,6 +27,12 @@
     //  root element "PhotoUploadRequest" - see the Trademe docs
     // We provide here just the FileName as an argument, the gogoTradeMe connector will do the rest. 
     $Response = trademe()->post('Photos::PhotoUploadRequest', array('FileName' => $TmpFile));
+
+    // Note that the uploaded photo will have a Description (name) at trademe as the basename 
+    // of the file (eg example.jpg) if you want to give it a different name, you can pass in an
+    // explicit Description parameter instead...
+    //
+    // $Response = trademe()->post('Photos::PhotoUploadRequest', array('FileName' => $TmpFile, 'Description' => 'Something Else'));
     
     // We can check the response is OK
     if($Response->is_ok())
