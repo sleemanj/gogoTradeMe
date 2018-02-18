@@ -174,9 +174,10 @@
         if(!isset($Edit['HasSuperFeature']))          $Edit['HasSuperFeature']   = NULL;
         
         // Best guess at the payment methods offered..
-        if(!isset($Edit['PaymentMethods']))
+        if(!isset($Edit['PaymentMethods']) || !isset($Edit['PaymentMethods']['PaymentMethodDetail']))
         {
-          $Edit['PaymentMethods']['PaymentMethod'] = array();
+          $Edit['PaymentMethods'] = array('PaymentMethod' => array());
+          
           foreach(explode(',', (string) $FullListing->PaymentOptions) as $Pmt)
           {
             if(!trim($Pmt)) continue;
@@ -185,30 +186,39 @@
               case 'nzbankdeposit': // LOWER CASE NO SPACE
                 $Edit['PaymentMethods']['PaymentMethod'][] = 'BankDeposit';
                 break;
-              
+                
               case 'cash': // LOWER CASE
                 $Edit['PaymentMethods']['PaymentMethod'][] = 'Cash';
                 break;
-              
+                
               case 'paynow':  
               case 'creditcard':
                 $Edit['PaymentMethods']['PaymentMethod'][] = 'CreditCard';
                 break;
-              
+                
               case 'safetrader':
                 $Edit['PaymentMethods']['PaymentMethod'][] = 'SafeTrader';
-              
+                
               default:
                 $Edit['PaymentMethods']['PaymentMethod'][] = 'Other';
                 $Edit['OtherPaymentMethod'] = $Pmt;
             }
           }
-        
-        
+          
+          
           if(!count($Edit['PaymentMethods']['PaymentMethod'])) 
           {
             $Edit['PaymentMethods']['PaymentMethod'] = 'None';
           }
+        }
+        elseif(isset($Edit['PaymentMethods']['PaymentMethodDetail']))
+        {
+          $PM = array();
+          foreach($Edit['PaymentMethods']['PaymentMethodDetail'] as $D)
+          {
+            $PM[] = $D['Id'];
+          }
+          $Edit['PaymentMethods'] = array('PaymentMethod' => $PM);
         }
         
         if(!isset($Edit['IsClearance']))              $Edit['IsClearance']       = NULL;
