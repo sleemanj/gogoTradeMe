@@ -808,7 +808,7 @@
      *  @return gogoOAuthCodecs
      */
      
-    protected function codec()
+    public function codec()
     {
       if(isset($this->Codecs)) return $this->Codecs;
       require_once('gogoOAuthCodecs.php');

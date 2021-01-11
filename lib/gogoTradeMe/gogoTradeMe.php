@@ -110,20 +110,6 @@
      *  listing types like Vehicles.  Ensure that if your use this function, you take
      *  special care in your testing that it works as you desire it to.
      *
-     *  Due to TradeMe API limits currently; 
-     *    Duration                 is undefined (probably empty) - you likely WILL need to set this even if not changing!
-     *    SendPaymentInstructions  is always set true     
-     *    IsPriceOnApplication     is undefined (false)
-     *    HasGalleryPlus           is probably correct, but not certain
-     *    HasAgreedWithLegalNotice is always true
-     *    HomePhoneNumber          may be correct, uncertain
-     *    MobilePhoneNumber        may be correct, uncertain
-     *    HasSuperFeature          is undefined (false)
-     *    PaymentMethods           is best guess 
-     *    OtherPaymentMethod       is best guess if any
-     *    IsClearance              is undefined (false)
-     *    Contacts                 is best guess (probably only applies to Classifieds, may not be equivalent to current listing)
-     *    
      *  The Selling/Edit API does not support these things at all, which may be applicable only to special types of listings...
      *    RegionId , Region, Suburb, GeographicLocation
      *    Dealership
@@ -135,23 +121,89 @@
      *    IsBuyNowOnly, HasMultiple - This is determined by there being a Quantity and a BuyNowPrice
      *    Description               - You can set $Data['Description'] to a string and it will be converted appropriatly
      *    
+     *  Previous versions of the API had these additional cautions which are probably now OK...
+     *    Duration                 was calculated (guessed) or may be undefined, recommend to always set this yourself
+     *    SendPaymentInstructions  was always set true     
+     *    IsPriceOnApplication     was undefined (false)
+     *    HasGalleryPlus           was probably correct, but not certain
+     *    HasAgreedWithLegalNotice was always true
+     *    HomePhoneNumber          may have been correct, uncertain
+     *    MobilePhoneNumber        may have been correct, uncertain
+     *    HasSuperFeature          was undefined (false)
+     *    PaymentMethods           was best guess 
+     *    OtherPaymentMethod       was best guess if any
+     *    IsClearance              was undefined (false)
+     *    Contacts                 was best guess (probably only applies to Classifieds, may not be equivalent to current listing)
+     * 
      */
      
     public function get_listing_for_edit($ListingId)
     {
-      $FullListing = $this->get('Listings/'.(int)$ListingId);
+      $FullListing = $this->get('Selling/Listings/'.(int)$ListingId);
       if(!$FullListing->is_ok())            return NULL;
       
       $Edit = array_pop($this->codec()->xml_to_array($FullListing));
             
-      $Edit['Description']         = $Edit['Body']; // Note that Body is a plain string
-                                                    // Description needs <paragraph> child elements, we will do that 
-                                                    // in validate_post_xml_selling 
+      if(!isset($Edit['Description']) && isset($Edit['Body']))
+      {
+        $Edit['Description']         = $Edit['Body']; // Note that Body is a plain string
+                                                      // Description needs <paragraph> child elements, we will do that 
+                                                      // in validate_post_xml_selling 
+      }
                                                     
-      $Edit['EndDateTime']        = $Edit['EndDate'];
-      $Edit['Pickup']             = $Edit['AllowsPickups'];
-      $Edit['IsBrandNew']         = $Edit['IsNew'];
-      $Edit['IsHomepageFeatured'] = $Edit['HasHomePageFeature'];
+      if(!isset($Edit['Duration']))
+      {
+        $Edit['Duration']           = round(((strtotime($Edit['EndDate']) - strtotime($Edit['StartDate'])) / (60*60*24)));                                              
+      
+        if(abs(((strtotime($Edit['EndDate']) - strtotime($Edit['StartDate'])) / (60*60*24)) - $Edit['Duration']) > (2/24))
+        {
+          // If the calculated duration is different to the end date by more than 2 hours we assume then it must be an EndDate
+          //  but because that could cost money unexpectedly if you didn't change it, we will remove this all togethor
+          unset($Edit['Duration']);
+        }
+        else
+        {
+          // We only handle up to 10 day
+          switch($Edit['Duration'])
+          {
+            case 2: $Edit['Duration'] = 'Two'; break;
+            case 3: $Edit['Duration'] = 'Three'; break;
+            case 4: $Edit['Duration'] = 'Four'; break;
+            case 5: $Edit['Duration'] = 'Five'; break;
+            case 6: $Edit['Duration'] = 'Six'; break;
+            case 7: $Edit['Duration'] = 'Seven'; break;
+            case 8: $Edit['Duration'] = 'Eight'; break;
+            case 9: $Edit['Duration'] = 'Nine'; break;
+            case 10: $Edit['Duration'] = 'Ten'; break;
+            default : unset($Edit['Duration']);
+          }
+        }
+      }
+      
+      if(!isset($Edit['EndDateTime']) && isset($Edit['EndDate']))
+      {
+        $Edit['EndDateTime']        = $Edit['EndDate'];
+      }
+      
+      if(!isset($Edit['Pickup']) && isset($Edit['AllowsPickups']))
+      {
+        $Edit['Pickup']             = $Edit['AllowsPickups'];
+      }
+      
+      if(!isset($Edit['IsBrandNew']) && isset($Edit['IsNew']))
+      {
+        $Edit['IsBrandNew']         = $Edit['IsNew'];
+      }
+      
+      if(!isset($Edit['IsHomepageFeatured']) && isset($Edit['HasHomePageFeature']))
+      {
+        $Edit['IsHomepageFeatured'] = $Edit['HasHomePageFeature'];
+      }
+      
+      if(!isset($Edit['HasSuperFeature']) && isset($Edit['IsSuperFeatured']))
+      {
+        $Edit['HasSuperFeature']    = $Edit['IsSuperFeatured'];
+      }
       
       if(!@$Edit['StartPrice'])     $Edit['StartPrice'] = $Edit['BuyNowPrice'];
       
@@ -171,10 +223,18 @@
         
         if(!isset($Edit['HomePhoneNumber']))          $Edit['HomePhoneNumber']   = @$Edit['ContactDetails']['PhoneNumber'];
         if(!isset($Edit['MobilePhoneNumber']))        $Edit['MobilePhoneNumber'] = @$Edit['ContactDetails']['MobilePhoneNumber'];
-        if(!isset($Edit['HasSuperFeature']))          $Edit['HasSuperFeature']   = NULL;
         
         // Best guess at the payment methods offered..
-        if(!isset($Edit['PaymentMethods']) || !isset($Edit['PaymentMethods']['PaymentMethodDetail']))
+        if(isset($Edit['PaymentMethods']['PaymentMethodDetail']))
+        {
+          $PM = array();
+          foreach($Edit['PaymentMethods']['PaymentMethodDetail'] as $D)
+          {
+            $PM[] = $D['Id'];
+          }
+          $Edit['PaymentMethods'] = array('PaymentMethod' => $PM);
+        }
+        elseif(!isset($Edit['PaymentMethods']))
         {
           $Edit['PaymentMethods'] = array('PaymentMethod' => array());
           
@@ -211,15 +271,6 @@
             $Edit['PaymentMethods']['PaymentMethod'] = 'None';
           }
         }
-        elseif(isset($Edit['PaymentMethods']['PaymentMethodDetail']))
-        {
-          $PM = array();
-          foreach($Edit['PaymentMethods']['PaymentMethodDetail'] as $D)
-          {
-            $PM[] = $D['Id'];
-          }
-          $Edit['PaymentMethods'] = array('PaymentMethod' => $PM);
-        }
         
         if(!isset($Edit['IsClearance']))              $Edit['IsClearance']       = NULL;
         
@@ -245,7 +296,22 @@
       
       // For simplicity for the user, reset the description to a plain string
       // instead of an array of <Paragraph>
-      $Edit['EditListingRequest']['Description'] = (string)$FullListing->Body;
+      if(isset($Edit['Description']['Paragraph']))
+      {
+        $Body = '';
+        if(is_array($Edit['Description']['Paragraph']))
+        {
+          foreach($Edit['Description']['Paragraph'] as $Paragraph)
+          {
+            $Body .= "{$Paragraph}\n\n";
+          }
+        }
+        else
+        {
+          $Body = $Edit['Description']['Paragraph'];
+        }
+        $Edit['Description'] = trim($Body);
+      }
       return $Edit['EditListingRequest'];
     }
     /** Validate and potentially modify the provided XML which is going to be posted.
@@ -449,6 +515,17 @@
         }
         break;
         
+        case 'CourierParcelTrackingRequest':
+        {
+          // Element Order
+          $Defaults           = array();          
+          $ElementOrder       = array('Parcel');
+          
+          $this->set_xml_defaults($xml, $Defaults); 
+          $this->reorder_xml_elements($xml, $ElementOrder);     
+        }
+        break;
+
         default: 
           throw new DomainException('Unknown XML Post: '.$method.'::'.$xml->getName());
           return;
@@ -800,6 +877,10 @@
             'AdditionalData',
             'VariantDefinition',
             'SecondCategory',            
+            'PremiumPackageCode',
+            'ProductSpecification',
+            'ListingExtras',
+            'HasGoodFor2Relists',            
             'ListingId',
           );
           
@@ -822,6 +903,7 @@
         }
         break;
         
+        case 'RelistWithEditsRequest':
         case 'EditListingRequest':
         {
           // Element Order
@@ -895,6 +977,10 @@
             'AdditionalData',
             'VariantDefinition',
             'SecondCategory',            
+            'PremiumPackageCode',
+            'ProductSpecification',
+            'ListingExtras',
+            'HasGoodFor2Relists',
             'ListingId',
           );
           
@@ -1023,12 +1109,41 @@
     }
     
     /** Get a gogoOAuthCodecs object to be used for encoding/decoding strings. */
-    protected function codec()
+    public function codec()
     {
       if(isset($this->Codecs)) return $this->Codecs;
       require_once(dirname(__FILE__).'/../gogoOAuth/gogoOAuthCodecs.php');
       $this->Codecs = new gogoOAuthCodecs(array('Boolean' => array('false', 'true')));
       return $this->Codecs;
     }
+
+    /** For a given scalar or XML element, determine if it is "true".
+     *
+     *   1 is true
+     *   true is true
+     *   '1' is true     
+     *   'true' is true
+     *  
+     *  Anything else is false.
+     *
+     *  This is necessary because the booleans in XML are passed as strings 'true' and 'false'
+     *   but there is the ability to pass in boolean php types and they are converted, but may 
+     *   not be converted in the other direction. So use this method to be safe.
+     */
+     
+   public function is_true($Value)
+   {
+     if($Value instanceof SimpleXMLElement)
+     {
+      $Value = (string)$Value;
+     }
+     
+     if($Value === true)   return true;
+     if($Value === 'true') return true;
+     if($Value === 1)      return true;
+     if($Value === '1')    return true;
+     
+     return false;
+   }
   }  
 ?>
