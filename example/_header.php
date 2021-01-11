@@ -32,6 +32,7 @@
           <a href="index.php" title="Home">Home</a>
           <a href="connect.php" title="Connect">Connect</a>
           <a />      
+          <a href="my_listings.php" title="Gallery of Your Listings">Gallery Demo</a>
           <a href="save_to_watchlist.php" title="Save To Watchlist">Watchlist Demo</a>
           <a href="save_note.php" title="Add a Note">Notes Demo</a>
           <a href="add_delivery_address.php" title="Add a Note">Addresses Demo</a>
