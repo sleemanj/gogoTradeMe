@@ -78,7 +78,7 @@
       list($response_headers,$response_body) = explode("\r\n\r\n",$FullResponseWithHeadersFromCurl,2); 
       
       $response_header_lines = explode("\r\n",$response_headers);         
-      if (preg_match('@^HTTP/[0-9]\.[0-9] ([0-9]{3})(.*)$@', $response_header_lines[0], $matches)) 
+      if (preg_match('@^HTTP/[0-9]\.?[0-9]? ([0-9]{3})(.*)$@', $response_header_lines[0], $matches)) 
       { 
         $http_response_line = array_shift($response_header_lines); 
         $response_code = $matches[1]; 
